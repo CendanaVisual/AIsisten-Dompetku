@@ -197,12 +197,11 @@ export async function parseTransactionWithAI(text: string): Promise<ParsedTransa
     return fallbackIndonesianParser(text);
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-1.5-flash or gemini-2.0-flash
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const genAI = new GoogleGenerativeAI(apiKey);
+  // Coba model Gemini Flash secara bertingkat untuk menjamin ketersediaan tinggi
+  const modelsToTry = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.7-flash"];
 
-    const systemPrompt = `
+  const systemPrompt = `
 Anda adalah sistem ekstraksi keuangan canggih bernama "AIsisten Dompetku".
 Tugas Anda adalah mengekstrak data transaksi keuangan dari teks bahasa Indonesia menjadi format JSON yang valid.
 
@@ -227,38 +226,44 @@ Output:
 {"type":"INCOME","amount":5000000,"category":"Gaji & Pendapatan","note":"Gaji bulanan","date":"${new Date().toISOString().split("T")[0]}"}
 `;
 
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: `${systemPrompt}\n\nTeks pengguna: "${text}"\nOutput JSON:` }],
+  for (const modelName of modelsToTry) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: `${systemPrompt}\n\nTeks pengguna: "${text}"\nOutput JSON:` }],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
         },
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
-      },
-    });
+      });
 
-    const responseText = result.response.text();
-    const cleaned = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
+      const responseText = result.response.text();
+      const cleaned = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
 
-    const type = parsed.type === "INCOME" ? "INCOME" : "EXPENSE";
-    const amount = Number(parsed.amount) || 0;
-    const category = CATEGORIES.includes(parsed.category) ? parsed.category : "Lain-lain";
-    const note = parsed.note || text;
-    const date = parsed.date || new Date().toISOString().split("T")[0];
+      const type = parsed.type === "INCOME" ? "INCOME" : "EXPENSE";
+      const amount = Number(parsed.amount) || 0;
+      const category = CATEGORIES.includes(parsed.category) ? parsed.category : "Lain-lain";
+      const note = parsed.note || text;
+      const date = parsed.date || new Date().toISOString().split("T")[0];
 
-    return {
-      type,
-      amount: amount > 0 ? amount : 10000,
-      category,
-      note,
-      date,
-    };
-  } catch (err) {
-    console.warn("AI generation failed, falling back to rule-based parser:", err);
-    return fallbackIndonesianParser(text);
+      return {
+        type,
+        amount: amount > 0 ? amount : 10000,
+        category,
+        note,
+        date,
+      };
+    } catch (err: any) {
+      console.warn(`Model ${modelName} gagal dipanggil (${err.message}), mencoba fallback...`);
+    }
   }
+
+  // Jika semua model AI sedang sibuk, gunakan fallback parser cerdas
+  return fallbackIndonesianParser(text);
 }
