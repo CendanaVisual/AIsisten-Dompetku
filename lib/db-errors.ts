@@ -37,7 +37,7 @@ export function describeDbError(error: unknown): DbErrorInfo {
         return {
           status: 503,
           code: error.code,
-          message: "Struktur tabel database belum siap. Admin perlu menjalankan `npx prisma db push`.",
+          message: "Sinkronisasi struktur tabel database sedang berlangsung. Silakan muat ulang (refresh) halaman dalam beberapa detik.",
         };
       case "P1001":
       case "P1002":

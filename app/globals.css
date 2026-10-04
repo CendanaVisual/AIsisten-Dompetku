@@ -139,3 +139,79 @@ body.dark {
 .ai-glow {
   animation: pulseGlow 2.5s infinite;
 }
+
+/* Luxury Smooth Transitions */
+@keyframes luxuryEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes luxuryExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.97);
+    filter: blur(8px);
+  }
+}
+
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.luxury-page-enter {
+  animation: luxuryEnter 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.luxury-page-exit {
+  animation: luxuryExit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.luxury-shimmer-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.luxury-shimmer-sweep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  animation: shimmerSweep 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.dark .luxury-shimmer-sweep::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 215, 0, 0.2) 50%,
+    transparent 100%
+  );
+}

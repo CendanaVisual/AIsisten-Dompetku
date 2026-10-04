@@ -15,6 +15,8 @@ import {
   EyeOff,
   Sparkles,
   ShieldCheck,
+  Home,
+  ArrowRight,
 } from "lucide-react";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 
@@ -27,9 +29,17 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isOAuthLoading, setIsOAuthLoading] = useState<"google" | "apple" | null>(null);
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigate = (path: string) => {
+    setIsNavigating(true);
+    setTimeout(() => {
+      router.push(path);
+    }, 280);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,10 +75,13 @@ export default function RegisterPage() {
         throw new Error(data.error || "Gagal melakukan pendaftaran.");
       }
 
-      setSuccess("Registrasi berhasil! Mengalihkan ke halaman masuk...");
+      setSuccess("Registrasi berhasil! Menyiapkan akun Anda...");
       setTimeout(() => {
-        router.push("/login?registered=1");
-      }, 1200);
+        setIsNavigating(true);
+        setTimeout(() => {
+          router.push("/login?registered=1");
+        }, 280);
+      }, 900);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan internal pada server.");
     } finally {
@@ -76,37 +89,57 @@ export default function RegisterPage() {
     }
   };
 
-  const handleOAuthSignIn = async (provider: "google" | "apple") => {
+  const handleOAuthSignIn = async () => {
     setError(null);
-    setIsOAuthLoading(provider);
+    setIsOAuthLoading(true);
     try {
-      await signIn(provider, { callbackUrl: "/dashboard" });
+      await signIn("google", { callbackUrl: "/dashboard" });
     } catch (err: any) {
-      setError("Gagal menghubungkan akun. Silakan coba lagi.");
-      setIsOAuthLoading(null);
+      setError("Gagal menghubungkan akun Google. Silakan coba lagi.");
+      setIsOAuthLoading(false);
     }
   };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 sm:p-6 overflow-hidden transition-colors">
       {/* Background Luxury Ambient Glow Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] h-[450px] w-[450px] rounded-full bg-emerald-500/10 dark:bg-gold-500/15 blur-[120px] pointer-events-none animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] h-[450px] w-[450px] rounded-full bg-teal-500/10 dark:bg-gold-600/15 blur-[120px] pointer-events-none animate-pulse" />
+      <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-emerald-500/15 dark:bg-gold-500/20 blur-[130px] pointer-events-none animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-teal-500/15 dark:bg-gold-600/20 blur-[130px] pointer-events-none animate-pulse" />
 
-      {/* Top Floating Bar for Theme & Home */}
-      <div className="absolute top-5 right-5 sm:top-8 sm:right-8 z-20 flex items-center gap-3">
-        <ThemeToggle />
+      {/* Top Floating Luxury Navigation Bar */}
+      <div className="absolute top-4 left-4 right-4 sm:top-7 sm:left-8 sm:right-8 z-30 flex items-center justify-between">
+        {/* Tombol Home / Beranda */}
+        <button
+          type="button"
+          onClick={() => handleNavigate("/")}
+          className="group inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/80 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-md backdrop-blur-md hover:border-emerald-500 hover:text-emerald-700 hover:shadow-emerald-500/10 active:scale-95 transition-all dark:border-gold-500/40 dark:bg-slate-900/85 dark:text-gold-200 dark:hover:border-gold-400 dark:hover:text-gold-100 dark:hover:shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+          title="Kembali ke Beranda"
+        >
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform dark:bg-gold-500/15 dark:text-gold-300">
+            <Home className="h-3.5 w-3.5" />
+          </div>
+          <span>Beranda</span>
+        </button>
+
+        {/* Theme Toggle Button */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+        </div>
       </div>
 
-      <div className="relative w-full max-w-lg z-10 animate-in fade-in zoom-in-95 duration-500">
-        {/* Luxury Glass Card */}
-        <div className="luxury-card rounded-3xl p-6 sm:p-9 shadow-2xl relative overflow-hidden">
+      {/* Main Luxury Auth Card Container with Smooth Transition */}
+      <div
+        className={`relative w-full max-w-lg z-10 my-16 transition-all duration-300 ${
+          isNavigating ? "luxury-page-exit" : "luxury-page-enter"
+        }`}
+      >
+        <div className="luxury-card rounded-3xl p-6 sm:p-9 shadow-2xl relative overflow-hidden luxury-shimmer-sweep">
           {/* Top Gold Shimmer Trim */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-gold-400 to-teal-500 dark:from-gold-600 dark:via-gold-300 dark:to-gold-600" />
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-gold-400 to-teal-500 dark:from-gold-600 dark:via-gold-300 dark:to-gold-600" />
 
           {/* Header */}
           <div className="text-center space-y-2 mb-6">
-            <div className="inline-flex h-13 w-13 p-3 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-gold-500 text-white shadow-xl shadow-emerald-600/25 dark:shadow-gold-500/20 group hover:scale-105 transition-transform">
+            <div className="inline-flex h-14 w-14 p-3.5 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-gold-500 text-white shadow-xl shadow-emerald-600/30 dark:shadow-gold-500/25 group hover:scale-105 transition-transform">
               <Wallet className="h-7 w-7" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:gold-text-glow">
@@ -125,25 +158,24 @@ export default function RegisterPage() {
           )}
 
           {success && (
-            <div className="mb-5 rounded-2xl bg-emerald-50 border border-emerald-200 dark:bg-gold-500/15 dark:border-gold-500/40 p-3.5 text-xs text-emerald-800 dark:text-gold-200 font-medium flex items-center gap-2 animate-in fade-in">
+            <div className="mb-5 rounded-2xl bg-emerald-50 border border-emerald-200 dark:bg-gold-500/15 dark:border-gold-500/40 p-3.5 text-xs text-emerald-800 dark:text-gold-200 font-medium flex items-center gap-2.5 animate-in fade-in">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-gold-400" />
               <span>{success}</span>
             </div>
           )}
 
-          {/* Social Sign-In (Google & Apple/iCloud) */}
-          <div className="space-y-2.5 mb-6">
-            {/* Google Button */}
+          {/* Google Sign-In Button (Social Login Tunggal Google) */}
+          <div className="mb-6">
             <button
               type="button"
-              onClick={() => handleOAuthSignIn("google")}
-              disabled={!!isOAuthLoading || isLoading}
-              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs sm:text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 hover:border-slate-300 active:scale-[0.99] transition-all dark:border-gold-500/35 dark:bg-slate-900/90 dark:text-gold-200 dark:hover:bg-slate-800 dark:hover:border-gold-400"
+              onClick={handleOAuthSignIn}
+              disabled={isOAuthLoading || isLoading || isNavigating}
+              className="w-full relative group flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3.5 text-xs sm:text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:shadow-md active:scale-[0.99] transition-all dark:border-gold-500/40 dark:bg-slate-900/90 dark:text-gold-200 dark:hover:bg-slate-800 dark:hover:border-gold-400 dark:hover:shadow-[0_0_20px_rgba(212,175,55,0.25)]"
             >
-              {isOAuthLoading === "google" ? (
+              {isOAuthLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin text-slate-600 dark:text-gold-300" />
               ) : (
-                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -162,24 +194,9 @@ export default function RegisterPage() {
                   />
                 </svg>
               )}
-              <span>Daftar langsung dengan Akun Google</span>
-            </button>
-
-            {/* Apple / iCloud iPhone Button */}
-            <button
-              type="button"
-              onClick={() => handleOAuthSignIn("apple")}
-              disabled={!!isOAuthLoading || isLoading}
-              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-slate-900 bg-slate-950 px-4 py-3 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-slate-900 active:scale-[0.99] transition-all dark:border-gold-500/35 dark:bg-black dark:text-gold-200 dark:hover:border-gold-400"
-            >
-              {isOAuthLoading === "apple" ? (
-                <Loader2 className="h-4 w-4 animate-spin text-white dark:text-gold-300" />
-              ) : (
-                <svg className="h-4 w-4 shrink-0 fill-current" viewBox="0 0 24 24">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.38c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.98.6-2.61 1.34-.55.63-1.03 1.67-.9 2.68 1 .08 1.97-.42 2.59-1.17z" />
-                </svg>
-              )}
-              <span>Daftar dengan Akun Apple (iCloud iPhone)</span>
+              <span className="font-medium tracking-wide">
+                {isOAuthLoading ? "Menghubungkan Akun Google..." : "Daftar langsung dengan Akun Google"}
+              </span>
             </button>
           </div>
 
@@ -188,8 +205,8 @@ export default function RegisterPage() {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200 dark:border-gold-500/25" />
             </div>
-            <span className="relative bg-white/90 dark:bg-slate-900 px-3 text-[11px] font-semibold text-slate-500 dark:text-gold-400/80 uppercase tracking-wider">
-              atau daftar dengan email
+            <span className="relative bg-white/95 dark:bg-slate-900 px-3 text-[11px] font-semibold text-slate-500 dark:text-gold-400/80 uppercase tracking-wider">
+              atau daftar dengan formulir email
             </span>
           </div>
 
@@ -283,33 +300,45 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit Button with Luxury Animation */}
             <button
               type="submit"
-              disabled={isLoading || !!success}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 transition-all active:scale-[0.99] mt-3 dark:from-gold-600 dark:via-gold-500 dark:to-gold-600 dark:text-slate-950 dark:shadow-[0_0_20px_rgba(212,175,55,0.35)]"
+              disabled={isLoading || !!success || isNavigating}
+              className="w-full group relative flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 transition-all active:scale-[0.99] mt-3 dark:from-gold-600 dark:via-gold-500 dark:to-gold-600 dark:text-slate-950 dark:shadow-[0_0_22px_rgba(212,175,55,0.35)] dark:hover:shadow-[0_0_28px_rgba(212,175,55,0.5)]"
             >
               {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-white dark:text-slate-950" />
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-white dark:text-slate-950" />
+                  <span>Memproses Pendaftaran...</span>
+                </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4 group-hover:rotate-12 transition-transform" />
                   <span>Daftar Akun Sekarang</span>
+                  <ArrowRight className="h-4 w-4 ml-1 opacity-70 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Footer Navigation */}
+          {/* Footer Navigation Switcher with Transition */}
           <div className="mt-6 text-center text-xs text-slate-600 dark:text-gold-300 font-medium">
             Sudah memiliki akun?{" "}
-            <Link
-              href="/login"
-              className="font-bold text-emerald-600 dark:text-gold-400 hover:underline underline-offset-4"
+            <button
+              type="button"
+              onClick={() => handleNavigate("/login")}
+              className="font-bold text-emerald-600 dark:text-gold-400 hover:underline underline-offset-4 inline-flex items-center gap-1 group"
             >
-              Masuk di sini
-            </Link>
+              <span>Masuk di sini</span>
+              <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+            </button>
           </div>
+        </div>
+
+        {/* Luxury Security Badge */}
+        <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-slate-500 dark:text-gold-400/70 font-medium">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-gold-400" />
+          <span>Keamanan Data Terisolasi & Sandi Dienkripsi Bcrypt</span>
         </div>
       </div>
     </div>

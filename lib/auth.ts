@@ -2,19 +2,15 @@ import type { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import AppleProvider from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-
-const isProduction = process.env.NODE_ENV === "production";
 
 export const isGoogleEnabled = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
 );
-export const isAppleEnabled = Boolean(process.env.APPLE_ID && process.env.APPLE_SECRET);
 
 /**
- * Buat username unik dari email untuk akun OAuth (Google / Apple).
+ * Buat username unik dari email untuk akun OAuth (Google).
  */
 async function generateUniqueUsername(email: string): Promise<string> {
   const base =
@@ -67,8 +63,7 @@ const providers: NextAuthOptions["providers"] = [
       }
 
       if (!user.password) {
-        const via = user.provider === "apple" ? "Apple (iCloud)" : "Google";
-        throw new Error(`Akun ini terdaftar melalui ${via}. Silakan masuk dengan tombol ${via}.`);
+        throw new Error("Akun ini terdaftar melalui Akun Google. Silakan masuk menggunakan tombol Akun Google.");
       }
 
       const isValid = await bcrypt.compare(credentials.password, user.password);
@@ -86,15 +81,7 @@ if (isGoogleEnabled) {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    })
-  );
-}
-
-if (isAppleEnabled) {
-  providers.push(
-    AppleProvider({
-      clientId: process.env.APPLE_ID!,
-      clientSecret: process.env.APPLE_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     })
   );
 }
@@ -109,18 +96,6 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   providers,
-  // Apple mengirim callback via POST lintas-situs (form_post), sehingga cookie PKCE
-  // harus SameSite=None agar ikut terkirim. Hanya diterapkan di production (HTTPS).
-  ...(isAppleEnabled && isProduction
-    ? {
-        cookies: {
-          pkceCodeVerifier: {
-            name: "__Secure-next-auth.pkce.code_verifier",
-            options: { httpOnly: true, sameSite: "none", path: "/", secure: true },
-          },
-        },
-      }
-    : {}),
   callbacks: {
     async signIn({ user, account, profile }) {
       if (!account || account.provider === "credentials") return true;
@@ -128,7 +103,7 @@ export const authOptions: NextAuthOptions = {
       const email = user.email?.toLowerCase().trim();
       if (!email) return "/login?error=OAuthNoEmail";
 
-      // Google menyertakan status verifikasi email; tolak email yang belum terverifikasi
+      // Google menyertakan status verifikasi email jika tersedia
       if (
         account.provider === "google" &&
         (profile as { email_verified?: boolean } | undefined)?.email_verified === false
@@ -148,6 +123,14 @@ export const authOptions: NextAuthOptions = {
               provider: account.provider,
             },
           });
+        } else if (!existing.image && user.image) {
+          await prisma.user.update({
+            where: { email },
+            data: {
+              image: user.image,
+              name: existing.name || user.name || null,
+            },
+          });
         }
         return true;
       } catch (error) {
@@ -162,7 +145,7 @@ export const authOptions: NextAuthOptions = {
           token.id = user.id;
           token.username = user.name;
         } else {
-          // Untuk OAuth, gunakan ID dari database kita (bukan ID dari Google/Apple)
+          // Untuk OAuth, ambil ID dari database
           const dbUser = await prisma.user.findUnique({
             where: { email: user.email!.toLowerCase().trim() },
           });
@@ -185,7 +168,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "super-secret-key-aisisten-dompetku-2026-generate-random",
 };
 
 export async function getServerAuthSession() {

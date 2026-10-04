@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { describeDbError } from "@/lib/db-errors";
-import { isAppleEnabled, isGoogleEnabled } from "@/lib/auth";
+import { isGoogleEnabled } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,6 @@ export async function GET() {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL ? "set" : "auto (VERCEL_URL)",
     GEMINI_API_KEY: Boolean(process.env.GEMINI_API_KEY),
     GOOGLE_LOGIN: isGoogleEnabled,
-    APPLE_LOGIN: isAppleEnabled,
   };
 
   let database: { ok: boolean; latencyMs?: number; code?: string; message?: string };

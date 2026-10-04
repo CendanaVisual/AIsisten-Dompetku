@@ -51,10 +51,8 @@ export async function POST(req: Request) {
       if (existingUser.email.toLowerCase() === email) {
         const hint =
           existingUser.provider === "google"
-            ? " Akun ini terhubung dengan Google — silakan masuk dengan Google."
-            : existingUser.provider === "apple"
-            ? " Akun ini terhubung dengan Apple (iCloud) — silakan masuk dengan Apple."
-            : " Silakan login atau gunakan email lain.";
+            ? " Akun ini terhubung dengan Akun Google — silakan masuk menggunakan tombol Akun Google."
+            : " Silakan masuk atau gunakan email lain.";
         return NextResponse.json({ error: `Email sudah terdaftar.${hint}` }, { status: 409 });
       }
       return NextResponse.json(
