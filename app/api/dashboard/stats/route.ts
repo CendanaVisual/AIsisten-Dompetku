@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { describeDbError } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +106,8 @@ export async function GET() {
       recentTransactions,
     });
   } catch (error) {
-    console.error("Dashboard Stats Error:", error);
-    return NextResponse.json({ error: "Gagal memuat statistik." }, { status: 500 });
+    const info = describeDbError(error);
+    console.error(`[dashboard:stats] ${info.code}:`, error);
+    return NextResponse.json({ error: info.message }, { status: info.status });
   }
 }

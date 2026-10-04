@@ -103,16 +103,19 @@ export default function TransactionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="luxury-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl relative border border-slate-200 dark:border-gold-500/40">
+        {/* Top Gold Shimmer Trim */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-gold-400 to-teal-500 dark:from-gold-600 dark:via-gold-300 dark:to-gold-600" />
+
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h3 className="text-base font-semibold text-slate-800">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-gold-500/20 px-6 py-4">
+          <h3 className="text-base font-bold text-slate-900 dark:text-gold-200">
             {initialData ? "Edit Transaksi" : "Tambah Transaksi Manual"}
           </h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-gold-400/60 dark:hover:bg-slate-850 dark:hover:text-gold-200 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -121,24 +124,24 @@ export default function TransactionModal({
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700">
+            <div className="rounded-2xl bg-rose-50 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-500/40 p-3 text-xs text-rose-700 dark:text-rose-300 font-medium">
               {error}
             </div>
           )}
 
           {/* Type Toggle: Pemasukan / Pengeluaran */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-gold-300 mb-1.5">
               Jenis Transaksi
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setType("EXPENSE")}
-                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold transition-all ${
+                className={`flex items-center justify-center gap-2 rounded-2xl py-2.5 text-xs font-bold transition-all ${
                   type === "EXPENSE"
-                    ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    ? "bg-rose-500 text-white shadow-md shadow-rose-500/30"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-gold-300 dark:hover:bg-slate-700"
                 }`}
               >
                 <ArrowUpRight className="h-4 w-4" />
@@ -147,10 +150,10 @@ export default function TransactionModal({
               <button
                 type="button"
                 onClick={() => setType("INCOME")}
-                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold transition-all ${
+                className={`flex items-center justify-center gap-2 rounded-2xl py-2.5 text-xs font-bold transition-all ${
                   type === "INCOME"
-                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30 dark:bg-gold-500 dark:text-slate-950"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-gold-300 dark:hover:bg-slate-700"
                 }`}
               >
                 <ArrowDownLeft className="h-4 w-4" />
@@ -161,11 +164,11 @@ export default function TransactionModal({
 
           {/* Amount Input */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-gold-300 mb-1">
               Nominal (Rp)
             </label>
             <div className="relative">
-              <span className="absolute left-3.5 top-2.5 text-xs font-semibold text-slate-400">
+              <span className="absolute left-3.5 top-3 text-xs font-bold text-slate-400 dark:text-gold-400/70">
                 Rp
               </span>
               <input
@@ -176,11 +179,11 @@ export default function TransactionModal({
                 required
                 min="1"
                 step="any"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-gold-500/30 dark:bg-slate-900 dark:text-gold-100 dark:focus:border-gold-400"
               />
             </div>
             {amount && !isNaN(parseFloat(amount)) && (
-              <p className="mt-1 text-[11px] text-emerald-600 font-medium">
+              <p className="mt-1 text-[11px] text-emerald-600 dark:text-gold-400 font-semibold">
                 Preview: {formatRupiah(parseFloat(amount))}
               </p>
             )}
@@ -188,16 +191,16 @@ export default function TransactionModal({
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-gold-300 mb-1">
               Kategori
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-gold-500/30 dark:bg-slate-900 dark:text-gold-100 dark:focus:border-gold-400"
             >
               {TRANSACTION_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
+                <option key={cat} value={cat} className="dark:bg-slate-900 dark:text-gold-200">
                   {cat}
                 </option>
               ))}
@@ -206,20 +209,20 @@ export default function TransactionModal({
 
           {/* Date */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-gold-300 mb-1">
               Tanggal Transaksi
             </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-gold-500/30 dark:bg-slate-900 dark:text-gold-100 dark:focus:border-gold-400"
             />
           </div>
 
           {/* Note */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-gold-300 mb-1">
               Catatan / Deskripsi (Opsional)
             </label>
             <textarea
@@ -227,7 +230,7 @@ export default function TransactionModal({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Contoh: Makan siang bersama tim kantor"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-gold-500/30 dark:bg-slate-900 dark:text-gold-100 dark:focus:border-gold-400"
             />
           </div>
 
@@ -237,14 +240,14 @@ export default function TransactionModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:border-gold-500/30 dark:text-gold-300 dark:hover:bg-slate-800 transition-colors"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-50 transition-all"
+              className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-2 text-xs font-bold text-white shadow-md hover:scale-105 active:scale-95 disabled:opacity-50 transition-all dark:from-gold-600 dark:to-gold-500 dark:text-slate-950 dark:shadow-[0_0_15px_rgba(212,175,55,0.4)]"
             >
               {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {initialData ? "Simpan Perubahan" : "Tambah Transaksi"}

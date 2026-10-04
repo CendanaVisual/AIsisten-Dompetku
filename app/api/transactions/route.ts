@@ -1,74 +1,70 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
+import { describeDbError } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
+const isValidDate = (value: string) => !Number.isNaN(new Date(value).getTime());
+
 const createTransactionSchema = z.object({
   type: z.enum(["INCOME", "EXPENSE"]),
-  amount: z.number().positive("Nominal harus lebih dari 0."),
-  category: z.string().min(1, "Kategori wajib dipilih."),
-  note: z.string().optional().default(""),
-  date: z.string().optional(),
+  amount: z.coerce
+    .number()
+    .positive("Nominal harus lebih dari 0.")
+    .max(1_000_000_000_000, "Nominal terlalu besar."),
+  category: z.string().trim().min(1, "Kategori wajib dipilih.").max(50),
+  note: z.string().trim().max(300, "Catatan maksimal 300 karakter.").optional().default(""),
+  date: z.string().refine(isValidDate, "Format tanggal tidak valid.").optional(),
 });
 
 export async function GET(req: Request) {
   try {
     const session = await getServerAuthSession();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Sesi berakhir, silakan login kembali." }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get("type"); // INCOME or EXPENSE
+    const type = searchParams.get("type");
     const category = searchParams.get("category");
-    const search = searchParams.get("search");
-    const month = searchParams.get("month"); // 1-12
-    const year = searchParams.get("year"); // e.g. 2026
-    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined;
+    const search = searchParams.get("search")?.trim().slice(0, 100);
+    const month = Number(searchParams.get("month"));
+    const year = Number(searchParams.get("year"));
+    const limitParam = Number(searchParams.get("limit"));
+    const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 500) : 500;
 
-    // Strict user isolation filter
-    const whereClause: any = {
-      userId: session.user.id,
-    };
+    // Isolasi data: SELALU difilter dengan userId dari sesi
+    const where: Prisma.TransactionWhereInput = { userId: session.user.id };
 
-    if (type && (type === "INCOME" || type === "EXPENSE")) {
-      whereClause.type = type;
-    }
-
-    if (category && category !== "ALL") {
-      whereClause.category = category;
-    }
-
-    if (search && search.trim() !== "") {
-      whereClause.OR = [
-        { note: { contains: search.trim(), mode: "insensitive" } },
-        { category: { contains: search.trim(), mode: "insensitive" } },
+    if (type === "INCOME" || type === "EXPENSE") where.type = type;
+    if (category && category !== "ALL") where.category = category;
+    if (search) {
+      where.OR = [
+        { note: { contains: search, mode: "insensitive" } },
+        { category: { contains: search, mode: "insensitive" } },
       ];
     }
-
-    if (month && year) {
-      const m = parseInt(month, 10);
-      const y = parseInt(year, 10);
-      const startDate = new Date(Date.UTC(y, m - 1, 1));
-      const endDate = new Date(Date.UTC(y, m, 1));
-      whereClause.date = {
-        gte: startDate,
-        lt: endDate,
+    if (month >= 1 && month <= 12 && year >= 2000 && year <= 2100) {
+      where.date = {
+        gte: new Date(Date.UTC(year, month - 1, 1)),
+        lt: new Date(Date.UTC(year, month, 1)),
       };
     }
 
     const transactions = await prisma.transaction.findMany({
-      where: whereClause,
-      orderBy: { date: "desc" },
+      where,
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       take: limit,
     });
 
     return NextResponse.json({ transactions });
   } catch (error) {
-    console.error("GET Transactions Error:", error);
-    return NextResponse.json({ error: "Gagal memuat transaksi." }, { status: 500 });
+    const info = describeDbError(error);
+    console.error(`[transactions:GET] ${info.code}:`, error);
+    return NextResponse.json({ error: info.message }, { status: info.status });
   }
 }
 
@@ -76,12 +72,11 @@ export async function POST(req: Request) {
   try {
     const session = await getServerAuthSession();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Sesi berakhir, silakan login kembali." }, { status: 401 });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
     const result = createTransactionSchema.safeParse(body);
-
     if (!result.success) {
       return NextResponse.json(
         { error: result.error.errors[0]?.message || "Data tidak valid." },
@@ -90,29 +85,25 @@ export async function POST(req: Request) {
     }
 
     const { type, amount, category, note, date } = result.data;
-    const parsedDate = date ? new Date(date) : new Date();
 
-    // Data isolation: strictly assign userId from session
     const transaction = await prisma.transaction.create({
       data: {
         userId: session.user.id,
         type,
         amount,
         category,
-        note: note?.trim() || "",
-        date: parsedDate,
+        note,
+        date: date ? new Date(date) : new Date(),
       },
     });
 
     return NextResponse.json(
-      {
-        message: "Transaksi berhasil ditambahkan.",
-        transaction,
-      },
+      { message: "Transaksi berhasil ditambahkan.", transaction },
       { status: 201 }
     );
   } catch (error) {
-    console.error("POST Transaction Error:", error);
-    return NextResponse.json({ error: "Gagal menyimpan transaksi." }, { status: 500 });
+    const info = describeDbError(error);
+    console.error(`[transactions:POST] ${info.code}:`, error);
+    return NextResponse.json({ error: info.message }, { status: info.status });
   }
 }

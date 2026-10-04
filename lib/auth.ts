@@ -1,32 +1,55 @@
-import { NextAuthOptions, getServerSession } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
+import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import AppleProvider from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
-export const authOptions: NextAuthOptions = {
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  pages: {
-    signIn: "/login",
-  },
-  providers: [
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        identifier: { label: "Email atau Username", type: "text" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.identifier || !credentials?.password) {
-          throw new Error("Mohon masukkan email/username dan password.");
-        }
+const isProduction = process.env.NODE_ENV === "production";
 
-        const identifier = credentials.identifier.trim();
+export const isGoogleEnabled = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+);
+export const isAppleEnabled = Boolean(process.env.APPLE_ID && process.env.APPLE_SECRET);
 
-        // Cari user berdasarkan email atau username
-        const user = await prisma.user.findFirst({
+/**
+ * Buat username unik dari email untuk akun OAuth (Google / Apple).
+ */
+async function generateUniqueUsername(email: string): Promise<string> {
+  const base =
+    email
+      .split("@")[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "")
+      .slice(0, 20) || "pengguna";
+
+  let candidate = base.length >= 3 ? base : `${base}_user`;
+  for (let i = 0; i < 5; i++) {
+    const exists = await prisma.user.findUnique({ where: { username: candidate } });
+    if (!exists) return candidate;
+    candidate = `${base}_${Math.random().toString(36).slice(2, 7)}`;
+  }
+  return `${base}_${Date.now().toString(36)}`;
+}
+
+const providers: NextAuthOptions["providers"] = [
+  CredentialsProvider({
+    name: "Credentials",
+    credentials: {
+      identifier: { label: "Email atau Username", type: "text" },
+      password: { label: "Password", type: "password" },
+    },
+    async authorize(credentials) {
+      if (!credentials?.identifier || !credentials?.password) {
+        throw new Error("Mohon masukkan email/username dan password.");
+      }
+
+      const identifier = credentials.identifier.trim();
+
+      let user;
+      try {
+        user = await prisma.user.findFirst({
           where: {
             OR: [
               { email: { equals: identifier, mode: "insensitive" } },
@@ -34,43 +57,135 @@ export const authOptions: NextAuthOptions = {
             ],
           },
         });
+      } catch (error) {
+        console.error("[auth] Database error saat login:", error);
+        throw new Error("Server tidak dapat terhubung ke database. Coba beberapa saat lagi.");
+      }
 
-        if (!user || !user.password) {
-          throw new Error("Akun tidak ditemukan atau password salah.");
-        }
+      if (!user) {
+        throw new Error("Akun tidak ditemukan atau password salah.");
+      }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) {
-          throw new Error("Password yang Anda masukkan salah.");
-        }
+      if (!user.password) {
+        const via = user.provider === "apple" ? "Apple (iCloud)" : "Google";
+        throw new Error(`Akun ini terdaftar melalui ${via}. Silakan masuk dengan tombol ${via}.`);
+      }
 
-        return {
-          id: user.id,
-          name: user.username,
-          email: user.email,
-        };
-      },
-    }),
-  ],
+      const isValid = await bcrypt.compare(credentials.password, user.password);
+      if (!isValid) {
+        throw new Error("Akun tidak ditemukan atau password salah.");
+      }
+
+      return { id: user.id, name: user.username, email: user.email, image: user.image };
+    },
+  }),
+];
+
+if (isGoogleEnabled) {
+  providers.push(
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    })
+  );
+}
+
+if (isAppleEnabled) {
+  providers.push(
+    AppleProvider({
+      clientId: process.env.APPLE_ID!,
+      clientSecret: process.env.APPLE_SECRET!,
+    })
+  );
+}
+
+export const authOptions: NextAuthOptions = {
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 hari
+  },
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
+  providers,
+  // Apple mengirim callback via POST lintas-situs (form_post), sehingga cookie PKCE
+  // harus SameSite=None agar ikut terkirim. Hanya diterapkan di production (HTTPS).
+  ...(isAppleEnabled && isProduction
+    ? {
+        cookies: {
+          pkceCodeVerifier: {
+            name: "__Secure-next-auth.pkce.code_verifier",
+            options: { httpOnly: true, sameSite: "none", path: "/", secure: true },
+          },
+        },
+      }
+    : {}),
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.username = user.name;
+    async signIn({ user, account, profile }) {
+      if (!account || account.provider === "credentials") return true;
+
+      const email = user.email?.toLowerCase().trim();
+      if (!email) return "/login?error=OAuthNoEmail";
+
+      // Google menyertakan status verifikasi email; tolak email yang belum terverifikasi
+      if (
+        account.provider === "google" &&
+        (profile as { email_verified?: boolean } | undefined)?.email_verified === false
+      ) {
+        return "/login?error=OAuthEmailNotVerified";
+      }
+
+      try {
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (!existing) {
+          await prisma.user.create({
+            data: {
+              email,
+              username: await generateUniqueUsername(email),
+              name: user.name ?? null,
+              image: user.image ?? null,
+              provider: account.provider,
+            },
+          });
+        }
+        return true;
+      } catch (error) {
+        console.error("[auth] Gagal menyimpan akun OAuth:", error);
+        return "/login?error=DatabaseError";
+      }
+    },
+
+    async jwt({ token, user, account }) {
+      if (user && account) {
+        if (account.provider === "credentials") {
+          token.id = user.id;
+          token.username = user.name;
+        } else {
+          // Untuk OAuth, gunakan ID dari database kita (bukan ID dari Google/Apple)
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email!.toLowerCase().trim() },
+          });
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.username = dbUser.username;
+          }
+        }
         token.email = user.email;
       }
       return token;
     },
+
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.name = token.username as string;
+        session.user.name = (token.username as string) ?? session.user.name;
         session.user.email = token.email as string;
       }
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || "default-secret-change-in-production-2026",
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 export async function getServerAuthSession() {

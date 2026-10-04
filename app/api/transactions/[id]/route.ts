@@ -1,60 +1,58 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
+import { describeDbError } from "@/lib/db-errors";
+
+export const dynamic = "force-dynamic";
+
+type RouteContext = { params: { id: string } };
+
+const isValidDate = (value: string) => !Number.isNaN(new Date(value).getTime());
 
 const updateTransactionSchema = z.object({
   type: z.enum(["INCOME", "EXPENSE"]).optional(),
-  amount: z.number().positive("Nominal harus lebih dari 0.").optional(),
-  category: z.string().min(1, "Kategori wajib diisi.").optional(),
-  note: z.string().optional(),
-  date: z.string().optional(),
+  amount: z.coerce
+    .number()
+    .positive("Nominal harus lebih dari 0.")
+    .max(1_000_000_000_000, "Nominal terlalu besar.")
+    .optional(),
+  category: z.string().trim().min(1, "Kategori wajib diisi.").max(50).optional(),
+  note: z.string().trim().max(300, "Catatan maksimal 300 karakter.").optional(),
+  date: z.string().refine(isValidDate, "Format tanggal tidak valid.").optional(),
 });
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+const unauthorized = () =>
+  NextResponse.json({ error: "Sesi berakhir, silakan login kembali." }, { status: 401 });
+
+const notFound = () =>
+  NextResponse.json({ error: "Transaksi tidak ditemukan atau bukan milik Anda." }, { status: 404 });
+
+export async function GET(_req: Request, { params }: RouteContext) {
   try {
     const session = await getServerAuthSession();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id } = params;
+    if (!session?.user?.id) return unauthorized();
 
     const transaction = await prisma.transaction.findFirst({
-      where: {
-        id,
-        userId: session.user.id, // Isolasi data pengguna
-      },
+      where: { id: params.id, userId: session.user.id },
     });
-
-    if (!transaction) {
-      return NextResponse.json({ error: "Transaksi tidak ditemukan." }, { status: 404 });
-    }
+    if (!transaction) return notFound();
 
     return NextResponse.json({ transaction });
   } catch (error) {
-    console.error("GET Single Transaction Error:", error);
-    return NextResponse.json({ error: "Gagal memuat transaksi." }, { status: 500 });
+    const info = describeDbError(error);
+    console.error(`[transaction:GET] ${info.code}:`, error);
+    return NextResponse.json({ error: info.message }, { status: info.status });
   }
 }
 
-export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: Request, { params }: RouteContext) {
   try {
     const session = await getServerAuthSession();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!session?.user?.id) return unauthorized();
 
-    const { id } = params;
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
     const result = updateTransactionSchema.safeParse(body);
-
     if (!result.success) {
       return NextResponse.json(
         { error: result.error.errors[0]?.message || "Data tidak valid." },
@@ -62,71 +60,41 @@ export async function PUT(
       );
     }
 
-    // Pastikan transaksi adalah milik user yang sedang login
-    const existing = await prisma.transaction.findFirst({
-      where: {
-        id,
-        userId: session.user.id,
-      },
+    const { date, ...rest } = result.data;
+
+    // updateMany + filter userId = update atomik yang hanya menyentuh data milik user ini
+    const updated = await prisma.transaction.updateMany({
+      where: { id: params.id, userId: session.user.id },
+      data: { ...rest, ...(date ? { date: new Date(date) } : {}) },
+    });
+    if (updated.count === 0) return notFound();
+
+    const transaction = await prisma.transaction.findFirst({
+      where: { id: params.id, userId: session.user.id },
     });
 
-    if (!existing) {
-      return NextResponse.json({ error: "Transaksi tidak ditemukan atau bukan milik Anda." }, { status: 404 });
-    }
-
-    const dataToUpdate: any = {};
-    if (result.data.type) dataToUpdate.type = result.data.type;
-    if (result.data.amount) dataToUpdate.amount = result.data.amount;
-    if (result.data.category) dataToUpdate.category = result.data.category;
-    if (result.data.note !== undefined) dataToUpdate.note = result.data.note;
-    if (result.data.date) dataToUpdate.date = new Date(result.data.date);
-
-    const updated = await prisma.transaction.update({
-      where: { id },
-      data: dataToUpdate,
-    });
-
-    return NextResponse.json({
-      message: "Transaksi berhasil diperbarui.",
-      transaction: updated,
-    });
+    return NextResponse.json({ message: "Transaksi berhasil diperbarui.", transaction });
   } catch (error) {
-    console.error("PUT Transaction Error:", error);
-    return NextResponse.json({ error: "Gagal memperbarui transaksi." }, { status: 500 });
+    const info = describeDbError(error);
+    console.error(`[transaction:PUT] ${info.code}:`, error);
+    return NextResponse.json({ error: info.message }, { status: info.status });
   }
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_req: Request, { params }: RouteContext) {
   try {
     const session = await getServerAuthSession();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!session?.user?.id) return unauthorized();
 
-    const { id } = params;
-
-    // Pastikan hanya bisa menghapus data milik sendiri
-    const existing = await prisma.transaction.findFirst({
-      where: {
-        id,
-        userId: session.user.id,
-      },
+    const deleted = await prisma.transaction.deleteMany({
+      where: { id: params.id, userId: session.user.id },
     });
-
-    if (!existing) {
-      return NextResponse.json({ error: "Transaksi tidak ditemukan atau bukan milik Anda." }, { status: 404 });
-    }
-
-    await prisma.transaction.delete({
-      where: { id },
-    });
+    if (deleted.count === 0) return notFound();
 
     return NextResponse.json({ message: "Transaksi berhasil dihapus." });
   } catch (error) {
-    console.error("DELETE Transaction Error:", error);
-    return NextResponse.json({ error: "Gagal menghapus transaksi." }, { status: 500 });
+    const info = describeDbError(error);
+    console.error(`[transaction:DELETE] ${info.code}:`, error);
+    return NextResponse.json({ error: info.message }, { status: info.status });
   }
 }
