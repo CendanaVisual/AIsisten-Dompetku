@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 
-export default function LoginPage() {
+function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
@@ -257,5 +257,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600 dark:text-gold-400" />
+        </div>
+      }
+    >
+      <LoginFormContent />
+    </Suspense>
   );
 }
