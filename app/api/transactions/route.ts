@@ -3,6 +3,8 @@ import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const createTransactionSchema = z.object({
   type: z.enum(["INCOME", "EXPENSE"]),
   amount: z.number().positive("Nominal harus lebih dari 0."),
