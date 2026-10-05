@@ -87,13 +87,13 @@ export default function DashboardPage() {
         <div className="space-y-1.5 z-10">
           <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/25 dark:bg-gold-500/20 px-3 py-1 text-xs font-semibold backdrop-blur-sm border border-emerald-400/30 dark:border-gold-500/40 text-emerald-200 dark:text-gold-300">
             <Sparkles className="h-3.5 w-3.5 text-emerald-300 dark:text-gold-400" />
-            <span>AI Flash NLP Aktif & Database Neon Terhubung</span>
+            <span>AI Flash Aktif & Database Terhubung</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight dark:gold-text-glow">
             Selamat Datang, {session.user?.name || "Pengguna"}! 👋
           </h1>
           <p className="text-xs sm:text-sm text-emerald-100 dark:text-gold-200/80 max-w-xl font-medium">
-            Semua transaksi Anda diisolasi secara mandiri dan aman di PostgreSQL Neon. Anda dapat mencatat transaksi lewat tombol manual atau mengetik santai di AIsisten Chat.
+            Semua transaksi Anda diisolasi secara mandiri dan aman di Database. Anda dapat mencatat transaksi lewat tombol manual atau mengetik santai di AIsisten Chat.
           </p>
         </div>
 
