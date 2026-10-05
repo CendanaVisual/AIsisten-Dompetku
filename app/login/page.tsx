@@ -288,7 +288,7 @@ function LoginFormContent() {
         {/* Luxury Security Badge */}
         <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-slate-500 dark:text-gold-400/70 font-medium">
           <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-gold-400" />
-          <span>Terenkripsi 256-bit & Terhubung ke Neon Database</span>
+          <span>Terenkripsi aman ke Database</span>
         </div>
       </div>
     </div>
