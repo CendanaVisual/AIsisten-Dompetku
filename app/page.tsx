@@ -27,7 +27,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 dark:border-gold-500/40 bg-white/80 dark:bg-slate-900/80 px-4 py-1.5 text-xs font-bold text-emerald-800 dark:text-gold-300 shadow-sm backdrop-blur-sm mb-6">
             <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-gold-400" />
-            <span>Didukung AI Flash & PostgreSQL Neon Database</span>
+            <span>Didukung Smart AI & Database Terverifikasi</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-gold-100 max-w-4xl mx-auto leading-[1.15]">
@@ -105,7 +105,7 @@ export default function HomePage() {
                   <div className="bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-gold-500/20 text-xs flex items-center justify-between">
                     <span className="text-slate-600 dark:text-gold-400 font-medium">Status Database:</span>
                     <span className="text-emerald-700 dark:text-gold-400 font-bold flex items-center gap-1">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Tersimpan di Neon PostgreSQL
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Tersimpan di Database
                     </span>
                   </div>
                 </div>
@@ -134,7 +134,7 @@ export default function HomePage() {
                 <Sparkles className="h-6 w-6" />
               </div>
               <h3 className="font-bold text-base text-slate-900 dark:text-gold-200">
-                AI Flash NLP Canggih
+                AI Smart Canggih
               </h3>
               <p className="text-xs text-slate-600 dark:text-gold-400/80 leading-relaxed font-medium">
                 Ekstraksi otomatis tipe transaksi, nominal dalam Rupiah, kategori, dan catatan secara presisi dari percakapan santai.
@@ -150,7 +150,7 @@ export default function HomePage() {
                 Isolasi Data Aman
               </h3>
               <p className="text-xs text-slate-600 dark:text-gold-400/80 leading-relaxed font-medium">
-                Setiap akun diisolasi secara ketat dengan NextAuth & Bcrypt. Data keuangan Anda 100% privat dan tidak dapat diakses pengguna lain.
+                Setiap akun diisolasi secara ketat & aman. Data keuangan Anda 100% privat dan tidak dapat diakses pengguna lain.
               </p>
             </div>
 
@@ -173,10 +173,10 @@ export default function HomePage() {
                 <Database className="h-6 w-6" />
               </div>
               <h3 className="font-bold text-base text-slate-900 dark:text-gold-200">
-                PostgreSQL Neon Cloud
+                Cloud
               </h3>
               <p className="text-xs text-slate-600 dark:text-gold-400/80 leading-relaxed font-medium">
-                Penyimpanan cloud serverless PostgreSQL berkinerja tinggi, siap dideploy langsung ke Vercel tanpa kendala cold start.
+                Penyimpanan cloud serverless berkinerja tinggi.
               </p>
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200/80 dark:border-gold-500/25 py-8 text-center text-xs text-slate-500 dark:text-gold-400/70 font-medium">
-        <p>© 2026 AIsisten Dompetku. Dibuat dengan Next.js 14, Tailwind CSS, PostgreSQL Neon & AI Flash.</p>
+        <p>© 2026 AIsisten Dompetku. Cendana Visual.</p>
       </footer>
     </div>
   );
